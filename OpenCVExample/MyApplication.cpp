@@ -1,11 +1,22 @@
-﻿
-#include "Utilities.h"
+﻿#include "Utilities.h"
 
+// Step 1: warp the camera image to the top-down table view (683 rows x 1434 cols)
+Mat WarpToTable(const Mat& src)
+{
+	// Table corners in the original image as (x = column, y = row): TL, BL, TR, BR
+	Point2f from[4] = { Point2f(337, 35), Point2f(38, 472), Point2f(1570, 21), Point2f(1888, 451) };
+	Point2f to[4]   = { Point2f(0, 0),    Point2f(0, 682),  Point2f(1433, 0),  Point2f(1433, 682) };
+
+	Mat H = getPerspectiveTransform(from, to);
+	Mat table;
+	warpPerspective(src, table, H, Size(1434, 683));
+	return table;
+}
 
 void MyApplication()
 {
-	char* file_location = "Media/Pool/";
-	char* pool_files[] = {
+	const char* file_location = "Media/Pool/";
+	const char* pool_files[] = {
 		"AllBalls.jpeg",
 		"Table1.jpeg",
 		"Table2.jpeg",
@@ -14,26 +25,22 @@ void MyApplication()
 		"Table5.jpeg",
 		"Table6.jpeg"
 	};
-
-	// Load images
 	int number_of_images = sizeof(pool_files) / sizeof(pool_files[0]);
-	Mat* pool_image = new Mat[number_of_images];
-	//Mat* new_pool_image = new Mat[number_of_images];
-	for (int file_no = 0; (file_no < number_of_images); file_no++)
+
+	for (int file_no = 0; file_no < number_of_images; file_no++)
 	{
-		cout << pool_files[file_no] << endl;
 		string filename(file_location);
 		filename.append(pool_files[file_no]);
-		pool_image[file_no] = imread(filename, -1);
-
-		if (pool_image[file_no].empty())
+		Mat image = imread(filename, -1);
+		if (image.empty())
 		{
-			cout << "Could not open " << pool_image[file_no] << endl;
+			cout << "Could not open " << filename << endl;
+			continue;
 		}
-		imshow(pool_files[file_no], pool_image[file_no]);
 
-		char pause = cv::waitKey();  // This introduces a delay between frame.  The length of the delay/number can be reduced.
+		Mat table = WarpToTable(image);
+		imshow(pool_files[file_no], table);
+		waitKey();
+		destroyWindow(pool_files[file_no]);
 	}
-
 }
-
